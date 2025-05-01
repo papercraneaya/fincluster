@@ -28,21 +28,10 @@ try:
     # Placeholder values (normally from yfinance)
     stock_info = {
         "longName": "Sample Corporation",
-        "sector": "Technology",  # Will be mapped to Information Technology
         "forwardPE": 25.0
     }
 
     company_name = stock_info.get("longName", ticker.upper())
-    sector_name = stock_info.get("sector", "Unknown")
-
-    # Adjust sector display name
-    if sector_name == "Consumer Cyclical":
-        sector_name = "Consumer Discretionary"
-    elif sector_name == "Technology":
-        sector_name = "Information Technology"
-
-    st.title(f"📈 Expected Return on {company_name} ({ticker.upper()})")
-    st.markdown(f"**Sector:** `{sector_name}`")
 
     # Match ticker with model coefficients
     row = coeff_df[coeff_df["ticker"].str.upper() == ticker.upper()]
@@ -50,12 +39,21 @@ try:
         st.error("❌ Ticker not found in model data.")
         st.stop()
 
+    # Extract sector name from the sector code
+    sector_code = row["sector"].values[0] if "sector" in row.columns else "Unknown"
+    sector_map = {
+        "GICS_25": "Consumer Discretionary",
+        "GICS_35": "Health Care",
+        "GICS_45": "Information Technology"
+    }
+    sector_name = sector_map.get(sector_code, "Unknown")
+
+    st.title(f"📈 Expected Return on {company_name} ({ticker.upper()})")
+    st.markdown(f"*Sector:* ⁠ {sector_name} ⁠")
+
     model_type = row["model"].values[0]
     intercept = row["intercept"].values[0]
-    st.markdown(f"**Model used**: `{model_type}`")
-
-    # Extract sector code from CSV (e.g. GICS_35, GICS_45)
-    sector_code = row["sector"].values[0] if "sector" in row.columns else "Unknown"
+    st.markdown(f"*Model used*: ⁠ {model_type} ⁠")
 
     # Extract coefficients
     coefs = []
@@ -82,10 +80,9 @@ try:
     rf = rf_percent / 100
     monthly_return = intercept + np.dot(coefs, x) + rf
 
-    # Save to session state for Page 3
     st.session_state["expected_return"] = monthly_return
 
-    st.success(f"🧠 Expected Return on {ticker.upper()}: **{round(monthly_return * 100, 2)}%**")
+    st.success(f"🧠 Expected Return on {ticker.upper()}: *{round(monthly_return * 100, 2)}%*")
 
     # === Peer Range Calculation ===
     st.markdown("---")
@@ -106,14 +103,12 @@ try:
                 model = peer_row["model"]
                 intercept_peer = peer_row["intercept"]
 
-                # Get coefficients
                 coefs_peer = []
                 for i in range(1, 5):
                     col = f"coef_{i}"
                     if col in peer_row and not pd.isna(peer_row[col]):
                         coefs_peer.append(peer_row[col])
 
-                # Get factor vector
                 if model == "CAPM":
                     x_peer = [0.0442]
                 elif model == "FF3":
@@ -121,15 +116,15 @@ try:
                 elif model == "Carhart":
                     x_peer = [0.01, 0.02, -0.01, 0.015]
                 else:
-                    continue  # Skip unknown models
+                    continue
 
                 if len(coefs_peer) == len(x_peer):
                     expected_return_peer = intercept_peer + np.dot(coefs_peer, x_peer) + rf
                     peer_returns.append(expected_return_peer)
 
             if peer_returns:
-                st.success(f"📉 Lowest Peer Return: **{min(peer_returns):.2%}**")
-                st.success(f"📈 Highest Peer Return: **{max(peer_returns):.2%}**")
+                st.success(f"📉 Lowest Peer Return: *{min(peer_returns):.2%}*")
+                st.success(f"📈 Highest Peer Return: *{max(peer_returns):.2%}*")
                 st.session_state["peer_min_return"] = min(peer_returns)
                 st.session_state["peer_max_return"] = max(peer_returns)
             else:
@@ -144,7 +139,7 @@ try:
     forward_pe = stock_info.get("forwardPE", None)
     if forward_pe and forward_pe > 0:
         analyst_return = (1 / forward_pe) + 0.03
-        st.success(f"📣 Analyst-Based Expected Return: **{round(analyst_return * 100, 2)}%**")
+        st.success(f"📣 Analyst-Based Expected Return: *{round(analyst_return * 100, 2)}%*")
     else:
         st.info("Forward P/E not available. Analyst return estimate could not be calculated.")
 
