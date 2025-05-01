@@ -50,7 +50,7 @@ try:
 
     st.title(f"📈 Expected Return on {company_name} ({ticker.upper()})")
     st.markdown(f"*Sector:* ⁠ {sector_name} ⁠")
-
+    
     model_type = row["model"].values[0]
     intercept = row["intercept"].values[0]
     st.markdown(f"*Model used*: ⁠ {model_type} ⁠")
