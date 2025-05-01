@@ -1,5 +1,4 @@
 import streamlit as st
-import yfinance as yf
 import pandas as pd
 import numpy as np
 
@@ -16,31 +15,31 @@ def load_coefficients():
     url = "https://raw.githubusercontent.com/PraewLao/price-and-peers-app/main/sector_model_coefficients_by_ticker_REPLACEMENT.csv"
     return pd.read_csv(url)
 
-# Get default 10-year treasury yield from Yahoo Finance
-@st.cache_data
+# Placeholder for risk-free rate instead of pulling from Yahoo
 def get_default_rf():
-    try:
-        rf_yield = yf.Ticker("^TNX").info["regularMarketPrice"] / 100
-        return round(rf_yield * 100, 2)
-    except:
-        return 4.0
+    return 4.0  # Simulate ^TNX = 4%
 
-# Load model data and treasury yield
+# Load model data and simulated treasury yield
 coeff_df = load_coefficients()
 default_rf = get_default_rf()
 
 # === MAIN PAGE ===
 try:
-    stock_info = yf.Ticker(ticker).info
+    # Placeholder values (normally from yfinance)
+    stock_info = {
+        "longName": "Sample Corporation",
+        "sector": "Technology",  # Will be mapped to Information Technology
+        "forwardPE": 25.0
+    }
+
     company_name = stock_info.get("longName", ticker.upper())
     sector_name = stock_info.get("sector", "Unknown")
 
-    # Adjust sector display name 
+    # Adjust sector display name
     if sector_name == "Consumer Cyclical":
         sector_name = "Consumer Discretionary"
     elif sector_name == "Technology":
         sector_name = "Information Technology"
-
 
     st.title(f"📈 Expected Return on {company_name} ({ticker.upper()})")
     st.markdown(f"**Sector:** `{sector_name}`")
@@ -131,11 +130,8 @@ try:
             if peer_returns:
                 st.success(f"📉 Lowest Peer Return: **{min(peer_returns):.2%}**")
                 st.success(f"📈 Highest Peer Return: **{max(peer_returns):.2%}**")
-            
-                # Save to session state for Page 3
                 st.session_state["peer_min_return"] = min(peer_returns)
                 st.session_state["peer_max_return"] = max(peer_returns)
-            
             else:
                 st.info("No valid expected return could be calculated for peers.")
 
