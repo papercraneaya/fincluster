@@ -17,15 +17,15 @@ def load_coefficients():
 
 # Placeholder for risk-free rate instead of pulling from Yahoo
 def get_default_rf():
-    return 4.0  # Simulate ^TNX = 4%
+    return 4.0  # Simulated 10Y Treasury Yield
 
-# Load model data and simulated treasury yield
+# Load data
 coeff_df = load_coefficients()
 default_rf = get_default_rf()
 
 # === MAIN PAGE ===
 try:
-    # Placeholder values (normally from yfinance)
+    # Placeholder stock info
     stock_info = {
         "longName": "Sample Corporation",
         "forwardPE": 25.0
@@ -39,7 +39,7 @@ try:
         st.error("❌ Ticker not found in model data.")
         st.stop()
 
-    # Extract sector name from the sector code
+    # Extract and map sector
     sector_code = row["sector"].values[0] if "sector" in row.columns else "Unknown"
     sector_map = {
         "GICS_25": "Consumer Discretionary",
@@ -55,26 +55,24 @@ try:
     intercept = row["intercept"].values[0]
     st.markdown(f"*Model used*: ⁠ {model_type} ⁠")
 
-    # Extract coefficients
+    # Coefficients
     coefs = []
     for i in range(1, 5):
         col = f"coef_{i}"
         if col in row.columns and not pd.isna(row[col].values[0]):
             coefs.append(row[col].values[0])
 
-    # Default factor inputs
+    # Factor input values
     factor_inputs = {
         "CAPM": [0.01],
         "FF3": [0.01, 0.02, -0.01],
         "Carhart": [0.01, 0.02, -0.01, 0.015]
     }
 
-    # Show toggle if CAPM and GICS_35 or GICS_45
     if model_type == "CAPM" and sector_code in ["GICS_35", "GICS_45"]:
         use_forward = st.toggle("Use forward-looking market premium?", value=False)
         factor_inputs["CAPM"] = [0.0442] if use_forward else [0.01]
 
-    # Calculate expected return
     x = np.array(factor_inputs[model_type])
     rf_percent = st.number_input("Enter Risk-Free Rate (%)", min_value=0.0, max_value=100.0, value=default_rf)
     rf = rf_percent / 100
@@ -84,7 +82,7 @@ try:
 
     st.success(f"🧠 Expected Return on {ticker.upper()}: *{round(monthly_return * 100, 2)}%*")
 
-    # === Peer Range Calculation ===
+    # === Peer Range ===
     st.markdown("---")
     st.subheader("📊 Expected Return Range of Peers")
 
@@ -133,7 +131,7 @@ try:
     except Exception as e:
         st.error(f"Error calculating peer return range: {e}")
 
-    # === Analyst Forecast Section ===
+    # === Analyst Forecast ===
     st.markdown("---")
     st.subheader("📣 Expected Return by Analyst Forecasts")
     forward_pe = stock_info.get("forwardPE", None)
